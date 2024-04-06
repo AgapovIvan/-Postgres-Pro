@@ -1,0 +1,91 @@
+PostgreSQL: База данных "academy"
+
+1.Создание базы данных "academy"
+CREATE DATABASE academy;
+
+2.Создание таблицы "students"
+
+CREATE TABLE students (
+    s_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    start_year INT NOT NULL
+);
+
+3.Создание таблицы "courses"
+
+CREATE TABLE courses (
+    c_no SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    hours INT NOT NULL
+);
+
+4.Создание таблицы "exams"
+
+CREATE TABLE exams (
+    s_id INT REFERENCES students(s_id),
+    c_no INT REFERENCES courses(c_no),
+    score INT CHECK (score >= 0 AND score <= 100),
+    PRIMARY KEY (s_id, c_no)
+);
+
+5. Добавление записей в таблицы
+
+• Добавление студентов
+INSERT INTO students (name, start_year)
+VALUES ('Иван Иванов', 2022),
+       ('Петр Петров', 2023),
+       ('Анна Сидорова', 2021);
+
+• Добавление курсов
+INSERT INTO courses (title, hours)
+VALUES ('Математика', 100),
+       ('Физика', 80),
+       ('Информатика', 120);
+
+• Добавление экзаменов
+INSERT INTO exams (s_id, c_no, score)
+VALUES (1, 1, 85),
+       (1, 2, 70),
+       (2, 3, 95);
+
+6. Студенты без экзаменов
+SELECT s.name
+FROM students s
+LEFT JOIN exams e ON s.s_id = e.s_id
+WHERE e.s_id IS NULL;
+
+7. Студенты и количество сданных экзаменов
+SELECT s.name, COUNT(e.c_no) AS exams_count
+FROM students s
+JOIN exams e ON s.s_id = e.s_id
+GROUP BY s.name
+HAVING COUNT(e.c_no) > 0;
+
+8. Курсы и средний балл
+SELECT c.title, AVG(e.score) AS average_score
+FROM courses c
+JOIN exams e ON c.c_no = e.c_no
+GROUP BY c.title
+ORDER BY average_score DESC;
+
+8. Скрипт генерации данных (psql)
+• Генерация студентов
+\set students_count 100
+INSERT INTO students (name, start_year)
+SELECT 'Студент ' || generate_series(1, :students_count),
+       2020 + floor(random() * 3)
+FROM generate_series(1, :students_count);
+
+• Генерация курсов
+\set courses_count 10
+INSERT INTO courses (title, hours)
+SELECT 'Курс ' || generate_series(1, :courses_count),
+       50 + floor(random() * 50)
+FROM generate_series(1, :courses_count);
+
+• Генерация экзаменов
+INSERT INTO exams (s_id, c_no, score)
+SELECT s.s_id, c.c_no, 50 + floor(random() * 50)
+FROM students s
+CROSS JOIN courses c
+WHERE random() < 0.7;
